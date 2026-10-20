@@ -50,6 +50,8 @@
       from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
     const CURRENCY = "₱";
+    const IMAGE_FOLDER = "";   // use "" if your photos are in the same folder as booking.html
+    const IMAGE_EXT = ".jpg";
     const $ = id => document.getElementById(id);
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
     const money = n => CURRENCY + Number(n).toLocaleString();
@@ -70,9 +72,12 @@
       list.forEach(v => {
         const on = selected?.id === v.id;
         const c = el("div", "car" + (on ? " active" : ""));
-        let pic = el("div", "car-icon", v.icon || "🚗");
-        if (v.image) { const im = el("img", "car-img"); im.src = v.image; im.alt = v.name; im.onerror = () => im.replaceWith(pic); pic = im; }
-        c.append(pic, el("strong", "", v.name),
+        const icon = el("div", "car-icon", v.icon || "🚗");
+        const im = el("img", "car-img");
+        im.alt = v.name;
+        im.onerror = () => im.replaceWith(icon);   // no photo found -> show the emoji instead
+        im.src = IMAGE_FOLDER + v.id + IMAGE_EXT;
+        c.append(im, el("strong", "", v.name),
           el("span", "muted", `${v.type} · ${v.seats} seats`), el("span", "price", `${money(v.pricePerDay)} / day`));
         const b = el("button", "btn", on ? "Selected" : "Select");
         b.type = "button";
