@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+  <title>Welcome</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      color-scheme: dark;
+      --page: #171717;
+      --card: #21F1A8;
+      --input: #C8FFEC;
+      --ink: #171717;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 430px;
+      padding: clamp(24px, 6vw, 36px);
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 6vw, 2rem);
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      color: #174c3b;
+      line-height: 1.5;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .choice.primary {
+      background: #171717;
+      color: #21F1A8;
+    }
+
+    .choice.primary:hover {
+      background: #343434;
+    }
+
+    .choice.secondary {
+      background: #C8FFEC;
+      color: #171717;
+      border: 1px solid #171717;
+    }
+
+    .choice.secondary:hover {
+      background: #b3f5dd;
+    }
+
+    .choice:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 2px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 4px;
+      font-size: 13px;
+      color: #174c3b;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(23, 23, 23, .3);
+    }
+  </style>
+</head>
+<body>
+  <main class="auth-card">
+    <h1>Welcome</h1>
+    <p class="subtitle">Log in to your account or create a new one to get started.</p>
+
+    <a class="choice primary" href="login.html">Login</a>
+    <div class="divider">or</div>
+    <a class="choice secondary" href="register.html">Create Account</a>
+  </main>
+</body>
+</html>

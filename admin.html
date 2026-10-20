@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+  <title>Admin - Review Bookings</title>
+  <link rel="stylesheet" href="booking.css">
+</head>
+<body>
+  <header><h1>Admin Panel</h1><nav><a href="home.html">My Biodata</a></nav></header>
+  <main>
+    <p id="pageMsg" class="msg" role="status"></p>
+    <div id="adminArea" hidden>
+      <h2>Pending booking requests</h2>
+      <div id="pending"></div>
+      <h2>Vehicles</h2>
+      <p class="muted">Adds sample vehicles (safe to press again; bookings are not erased).</p>
+      <button class="btn alt" id="seedBtn" type="button">Add sample vehicles</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { doc, getDoc, setDoc, collection, query, where, onSnapshot, writeBatch, arrayUnion, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const $ = id => document.getElementById(id);
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+    const say = (text, type = "error") => { const m = $("pageMsg"); m.textContent = text; m.className = text ? `msg ${type}` : "msg"; };
+    const money = n => "₱" + Number(n).toLocaleString();
+
+    const SAMPLE = [
+      ["vios", "Toyota Vios", "Sedan", 4, 1800, "🚗"], ["city", "Honda City", "Sedan", 5, 2000, "🚗"],
+      ["innova", "Toyota Innova", "Van", 7, 3200, "🚐"], ["montero", "Mitsubishi Montero", "SUV", 7, 4500, "🚙"],
+      ["fortuner", "Toyota Fortuner", "SUV", 7, 4800, "🚙"], ["hilux", "Toyota Hilux", "Pickup", 5, 4000, "🛻"],
+      ["click", "Honda Click V3", "Motorbike", 2, 800, "🏍️"], ["aerox", "Yamaha Aerox", "Motorbike", 2, 1000, "🏍️"],
+      ["mio", "Yamaha Mio", "Motorbike", 2, 600, "🏍️"], ["raider", "Suzuki Raider FI", "Motorbike", 2, 900, "🏍️"]
+    ];
+
+    $("seedBtn").addEventListener("click", async () => {
+      try {
+        await Promise.all(SAMPLE.map(([id, name, type, seats, pricePerDay, icon]) =>
+          setDoc(doc(db, "vehicles", id), { name, type, seats, pricePerDay, icon, image: `images/${id}.jpg` }, { merge: true })));
+        say("Sample vehicles added.", "ok");
+      } catch (e) { console.error(e); say("Could not add vehicles. Check your Firestore rules."); }
+    });
+
+    // Admin decision: approve (also blocks the dates on the vehicle) or reject
+    async function decide(b, approve, buttons) {
+      say(""); buttons.forEach(x => x.disabled = true);
+      try {
+        const batch = writeBatch(db), vRef = doc(db, "vehicles", b.vehicleId);
+        if (approve) {
+          const v = (await getDoc(vRef)).data() || {};
+          if ((v.bookedRanges || []).some(r => r.start < b.returnDate && r.end > b.pickupDate)) {
+            say("Those dates were already approved for another booking. Please reject this request.");
+            buttons.forEach(x => x.disabled = false); return;
+          }
+          batch.update(vRef, { bookedRanges: arrayUnion({ start: b.pickupDate, end: b.returnDate }) });
+        }
+        batch.update(doc(db, "bookings", b.id), { status: approve ? "approved" : "rejected", reviewedAt: serverTimestamp() });
+        await batch.commit();
+      } catch (e) { console.error(e); say("Could not save your decision."); buttons.forEach(x => x.disabled = false); }
+    }
+
+    function watchPending() {
+      onSnapshot(query(collection(db, "bookings"), where("status", "==", "pending")), snap => {
+        const box = $("pending"); box.replaceChildren();
+        if (snap.empty) { box.append(el("p", "muted", "No pending requests.")); return; }
+        snap.docs.map(d => ({ id: d.id, ...d.data() })).forEach(b => {
+          const c = el("div", "panel booking");
+          c.append(el("strong", "", b.vehicleName),
+            el("p", "", `${b.customerName || b.userName || "Customer"} · ${b.phone || "no number"}`),
+            el("p", "muted", b.userEmail),
+            el("p", "muted", `Address: ${b.address || "not provided"}`),
+            el("p", "", `${b.pickupDate} → ${b.returnDate} (${b.days} day(s)) · ${b.location}`),
+            el("p", "price", `Total: ${money(b.total)}`));
+          const ok = el("button", "btn", "Approve"), no = el("button", "btn no", "Reject");
+          ok.type = no.type = "button";
+          ok.onclick = () => decide(b, true, [ok, no]);
+          no.onclick = () => decide(b, false, [ok, no]);
+          c.append(ok, document.createTextNode(" "), no); box.append(c);
+        });
+      }, e => { console.error(e); say("Could not load bookings. Check your Firestore rules."); });
+    }
+
+    onAuthStateChanged(auth, async u => {
+      if (!u) { window.location.replace("login.html"); return; }
+      try {
+        const a = await getDoc(doc(db, "admins", u.uid));
+        if (!a.exists()) { say("This page is for admins only."); return; }
+        $("adminArea").hidden = false; watchPending();
+      } catch (e) { console.error(e); say("Could not verify admin access."); }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+  <title>Create Account</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <main class="auth-card">
+    <h1>Create Account</h1>
+    <p class="subtitle">Register your student account</p>
+
+    <form id="registerForm" novalidate>
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="At least 8 letters, numbers, or _"
+             autocomplete="username" maxlength="30" required>
+      <small id="usernameError" class="field-error"></small>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Enter your email"
+             autocomplete="email" required>
+      <small id="emailError" class="field-error"></small>
+
+      <label for="birthday">Birthday</label>
+      <input type="date" id="birthday" required>
+      <small id="birthdayError" class="field-error"></small>
+
+      <label for="gender">Gender</label>
+      <select id="gender" required>
+        <option value="">-- Select Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+        <option value="Prefer not to say">Prefer not to say</option>
+      </select>
+      <small id="genderError" class="field-error"></small>
+
+      <label for="password">Password</label>
+      <div class="password-field">
+        <input type="password" id="password" placeholder="Create a strong password"
+               autocomplete="new-password" required>
+        <button type="button" class="toggle-password" data-target="password"
+                aria-label="Show password" aria-pressed="false">
+          <svg class="icon-eye" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+      <small id="passwordError" class="field-error"></small>
+
+      <div class="password-rules">
+        <strong>Password requirements</strong>
+        <ul>
+          <li>At least 8 characters</li>
+          <li>One uppercase and one lowercase letter</li>
+          <li>One number and one special character</li>
+          <li>No spaces</li>
+        </ul>
+      </div>
+
+      <label for="confirmPassword">Confirm Password</label>
+      <div class="password-field">
+        <input type="password" id="confirmPassword" placeholder="Retype your password"
+               autocomplete="new-password" required>
+        <button type="button" class="toggle-password" data-target="confirmPassword"
+                aria-label="Show password" aria-pressed="false">
+          <svg class="icon-eye" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+      <small id="confirmPasswordError" class="field-error"></small>
+
+      <div class="terms-row">
+        <input type="checkbox" id="terms">
+        <label for="terms">I agree to the Terms and Conditions</label>
+      </div>
+      <small id="termsError" class="field-error"></small>
+
+      <p id="formMessage" class="form-message" role="status" aria-live="polite"></p>
+      <button id="registerButton" type="submit">Register</button>
+      <button class="secondary-button" type="reset">Reset</button>
+    </form>
+
+    <p class="auth-link">Already have an account? <a href="login.html">Login here</a></p>
+  </main>
+  <script type="module" src="register.js"></script>
+</body>
+</html>

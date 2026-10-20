@@ -1,0 +1,37 @@
+*{box-sizing:border-box}
+:root{--page:#171717;--card:#21F1A8;--input:#C8FFEC;--panel:#222;--ink:#171717}
+[hidden]{display:none!important}
+body{margin:0;background:var(--page);color:#fff;font-family:Arial,Helvetica,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px;background:var(--card);color:var(--ink)}
+header h1{margin:0;font-size:1.2rem}
+header a{color:var(--ink);font-weight:700;text-decoration:none;margin-left:14px}
+main{max-width:1000px;margin:0 auto;padding:12px 14px 40px}
+h2{color:var(--card);margin:26px 0 12px;font-size:1.15rem}
+.panel{background:var(--panel);border-left:4px solid var(--input);border-radius:10px;padding:16px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.car{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:2px solid transparent;border-left:4px solid var(--input);border-radius:10px;padding:14px}
+.car.active{border-color:var(--card)}
+.car-icon{font-size:2.2rem}
+.muted{color:#b5b5b5;font-size:14px}
+.price{color:var(--card);font-weight:700}
+label{display:block;margin:12px 0 6px;font-weight:700;font-size:14px}
+input,select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--ink);border-radius:6px;background:var(--input);color:var(--ink);font-size:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{min-height:42px;padding:10px 16px;margin-top:8px;border:0;border-radius:6px;background:var(--card);color:var(--ink);font-size:15px;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.alt{background:var(--input)}
+.btn.no{background:#ff8a8a}
+.msg{margin:10px 0;padding:10px;border-radius:6px;font-weight:700;font-size:14px}
+.msg:empty{display:none}
+.msg.error{background:#3a1d1d;color:#ff8a8a}
+.msg.ok{background:#12372b;color:var(--card)}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;text-transform:uppercase;background:#444}
+.pill.pending{background:#5a4a12;color:#ffd75e}
+.pill.approved{background:#12372b;color:var(--card)}
+.pill.rejected{background:#3a1d1d;color:#ff8a8a}
+.note.approved{color:var(--card)}.note.rejected{color:#ff8a8a}
+.booking p{margin:6px 0}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.car-img{width:100%;height:120px;object-fit:contain;background:#2c2c2c;border-radius:8px}
+.pill.cancelled{background:#333;color:#b5b5b5}.note.cancelled{color:#b5b5b5}

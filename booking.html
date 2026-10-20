@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+  <title>Book a Vehicle</title>
+  <link rel="stylesheet" href="booking.css">
+</head>
+<body>
+  <header><h1>Vehicle Rental</h1><nav><a href="home.html">My Biodata</a></nav></header>
+  <main>
+    <p id="pageMsg" class="msg" role="status"></p>
+
+    <h2>1. Choose a vehicle</h2>
+    <label for="typeFilter">Filter by type</label>
+    <select id="typeFilter"><option value="">All types</option></select>
+    <div id="vehicles" class="grid" style="margin-top:12px"></div>
+
+    <h2>2. Booking details</h2>
+    <form id="bookForm" class="panel" novalidate>
+      <strong>Vehicle:</strong> <span id="chosen">None selected</span>
+      <label for="custName">Full name</label>
+      <input type="text" id="custName" placeholder="Your full name" autocomplete="name" maxlength="80">
+      <label for="custPhone">Contact number</label>
+      <input type="tel" id="custPhone" placeholder="e.g. 09123456789" autocomplete="tel" inputmode="numeric" maxlength="11">
+      <label for="custAddress">Current address</label>
+      <input type="text" id="custAddress" placeholder="House no., street, barangay, city" autocomplete="street-address" maxlength="200">
+      <p class="muted">Used by the rental shop for verification only.</p>
+      <label for="place">Pick-up / return location</label>
+      <input type="text" id="place" placeholder="e.g. Main office or your address" maxlength="120">
+      <div class="row">
+        <div><label for="pickup">Pick-up date</label><input type="date" id="pickup"></div>
+        <div><label for="ret">Return date</label><input type="date" id="ret"></div>
+      </div>
+      <p id="summary" class="msg">Select a vehicle first.</p>
+      <p id="formMsg" class="msg" role="status" aria-live="polite"></p>
+      <button class="btn" id="submitBtn" type="submit">Submit Booking Request</button>
+    </form>
+
+    <h2>3. My bookings</h2>
+    <p id="bookMsg" class="msg" role="status"></p>
+    <div id="myBookings"></div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { collection, getDocs, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc }
+      from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const CURRENCY = "₱";
+    const $ = id => document.getElementById(id);
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+    const money = n => CURRENCY + Number(n).toLocaleString();
+    const say = (id, text, type = "error") => { const m = $(id); m.textContent = text; m.className = text ? `msg ${type}` : "msg"; };
+    let user, vehicles = [], selected = null, quote = null;
+
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+    $("pickup").min = today; $("ret").min = today;
+
+    function renderVehicles() {
+      const type = $("typeFilter").value, box = $("vehicles");
+      box.replaceChildren();
+      const list = vehicles.filter(v => !type || v.type === type);
+      if (!list.length) {
+        box.append(el("p", "muted", vehicles.length ? "No vehicles of this type." : "No vehicles yet. Ask the admin to add vehicles."));
+        return;
+      }
+      list.forEach(v => {
+        const on = selected?.id === v.id;
+        const c = el("div", "car" + (on ? " active" : ""));
+        let pic = el("div", "car-icon", v.icon || "🚗");
+        if (v.image) { const im = el("img", "car-img"); im.src = v.image; im.alt = v.name; im.onerror = () => im.replaceWith(pic); pic = im; }
+        c.append(pic, el("strong", "", v.name),
+          el("span", "muted", `${v.type} · ${v.seats} seats`), el("span", "price", `${money(v.pricePerDay)} / day`));
+        const b = el("button", "btn", on ? "Selected" : "Select");
+        b.type = "button";
+        b.onclick = () => {
+          selected = v;
+          $("chosen").textContent = `${v.name} (${money(v.pricePerDay)}/day)`;
+          renderVehicles(); calc();
+          $("bookForm").scrollIntoView({ behavior: "smooth" });
+        };
+        c.append(b); box.append(c);
+      });
+    }
+
+    // Availability check + cost calculation
+    function calc() {
+      const a = $("pickup").value, b = $("ret").value;
+      quote = null;
+      if (!selected) return say("summary", "Select a vehicle first.");
+      if (!a || !b) return say("summary", "Pick your dates to see the price.");
+      const days = Math.round((new Date(b) - new Date(a)) / 864e5);
+      if (days < 1) return say("summary", "Return date must be after the pick-up date.");
+      const taken = (selected.bookedRanges || []).some(r => r.start < b && r.end > a);
+      if (taken) return say("summary", "Vehicle unavailable for these dates. Choose another vehicle or date.");
+      quote = { days, total: days * selected.pricePerDay };
+      say("summary", `Available! ${days} day(s) × ${money(selected.pricePerDay)} = ${money(quote.total)}`, "ok");
+    }
+    $("pickup").addEventListener("change", calc);
+    $("ret").addEventListener("change", calc);
+    $("typeFilter").addEventListener("change", renderVehicles);
+    // Contact number: digits only, max 11
+    $("custPhone").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 11); });
+
+    $("bookForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      say("formMsg", "");
+      const place = $("place").value.trim();
+      if (!selected) return say("formMsg", "Please select a vehicle first.");
+      const name = $("custName").value.trim(), phone = $("custPhone").value.trim(), addr = $("custAddress").value.trim();
+      if (!name) return say("formMsg", "Please enter your full name.");
+      if (!/^[0-9]{11}$/.test(phone)) return say("formMsg", "Contact number must be exactly 11 digits, numbers only (e.g. 09123456789).");
+      if (!addr) return say("formMsg", "Please enter your current address.");
+      if (!place) return say("formMsg", "Please enter the pick-up location.");
+      if (!quote) return say("formMsg", "Choose valid, available dates first.");
+      $("submitBtn").disabled = true;
+      try {
+        await addDoc(collection(db, "bookings"), {
+          uid: user.uid, userName: user.displayName || "", userEmail: user.email, customerName: name, phone, address: addr,
+          vehicleId: selected.id, vehicleName: selected.name, location: place,
+          pickupDate: $("pickup").value, returnDate: $("ret").value,
+          days: quote.days, total: quote.total, status: "pending", createdAt: serverTimestamp()
+        });
+        $("bookForm").reset(); $("custName").value = user.displayName || ""; selected = null; quote = null;
+        $("chosen").textContent = "None selected";
+        renderVehicles(); calc();
+        say("formMsg", "Booking request submitted! Waiting for admin approval.", "ok");
+      } catch (err) {
+        console.error(err);
+        say("formMsg", "Could not submit your request. Please try again.");
+      } finally { $("submitBtn").disabled = false; }
+    });
+
+    async function loadVehicles() {
+      try {
+        const snap = await getDocs(collection(db, "vehicles"));
+        vehicles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        [...new Set(vehicles.map(v => v.type))].forEach(t => { const o = el("option", "", t); o.value = t; $("typeFilter").append(o); });
+        renderVehicles();
+      } catch (err) {
+        console.error(err);
+        say("pageMsg", `Could not load vehicles (${err.code || "error"}). Check your Firestore rules.`);
+      }
+    }
+
+    // Customer notification = live status of each request
+    function watchMine() {
+      const note = { pending: "Waiting for admin review.", approved: "Your booking is confirmed!", rejected: "Sorry, your booking was not approved.", cancelled: "You cancelled this request." };
+      onSnapshot(query(collection(db, "bookings"), where("uid", "==", user.uid)), snap => {
+        const box = $("myBookings"); box.replaceChildren();
+        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 9e9) - (a.createdAt?.seconds || 9e9));
+        if (!rows.length) { box.append(el("p", "muted", "You have no bookings yet.")); return; }
+        rows.forEach(b => {
+          const c = el("div", "panel booking"), top = el("div", "row-between");
+          top.append(el("strong", "", b.vehicleName), el("span", `pill ${b.status}`, b.status));
+          c.append(top, el("p", "muted", `${b.pickupDate} → ${b.returnDate} · ${b.days} day(s) · ${b.location}`),
+            el("p", "", `Total: ${money(b.total)}`), el("p", `note ${b.status}`, note[b.status] || ""));
+          if (b.status === "pending") {
+            const x = el("button", "btn no", "Cancel request");
+            x.type = "button";
+            x.onclick = async () => {
+              if (!confirm("Cancel this booking request?")) return;
+              x.disabled = true;
+              try { await updateDoc(doc(db, "bookings", b.id), { status: "cancelled", cancelledAt: serverTimestamp() }); }
+              catch (err) { console.error(err); say("bookMsg", `Could not cancel (${err.code || "error"}).`); x.disabled = false; }
+            };
+            c.append(x);
+          }
+          box.append(c);
+        });
+      }, err => { console.error(err); say("bookMsg", `Could not load your bookings (${err.code || "error"}).`); });
+    }
+
+    onAuthStateChanged(auth, u => {
+      if (!u) { window.location.replace("login.html"); return; }
+      user = u; $("custName").value = u.displayName || ""; loadVehicles(); watchMine();
+    });
+  </script>
+</body>
+</html>

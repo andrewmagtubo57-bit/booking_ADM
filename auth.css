@@ -1,0 +1,317 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: dark;
+  --page: #171717;
+  --card: #21F1A8;
+  --input: #C8FFEC;
+  --ink: #171717;
+  --danger: #8B0000;
+  --success: #075c37;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px 14px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--page);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 430px;
+  margin: auto;
+  padding: clamp(20px, 5vw, 32px);
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+}
+
+h1 {
+  text-align: center;
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 5vw, 1.9rem);
+}
+
+.subtitle {
+  text-align: center;
+  margin: 0 0 24px;
+  color: #174c3b;
+}
+
+form label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid #171717;
+  border-radius: 6px;
+  background: var(--input);
+  color: #171717;
+  font-size: 16px;
+}
+
+input:focus,
+select:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border: 2px solid var(--danger);
+}
+
+.field-error {
+  display: block;
+  min-height: 0;
+  margin-top: 5px;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.field-error:not(:empty) {
+  padding: 2px 0 4px;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 48px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #171717;
+  border-radius: 6px;
+}
+
+.toggle-password:hover {
+  background: rgba(23, 23, 23, .12);
+}
+
+.toggle-password .icon-eye-off,
+.toggle-password[aria-pressed="true"] .icon-eye {
+  display: none;
+}
+
+.toggle-password[aria-pressed="true"] .icon-eye-off {
+  display: block;
+}
+
+.password-rules {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(23, 23, 23, .3);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.password-rules ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.terms-row input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  accent-color: #171717;
+}
+
+.terms-row label {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+button {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #171717;
+  color: #21F1A8;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #343434;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.secondary-button {
+  background: #C8FFEC;
+  color: #171717;
+  border: 1px solid #171717;
+}
+
+.form-message {
+  display: none;
+  margin: 14px 0 4px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.form-message:not(:empty) {
+  display: block;
+  background: rgba(255, 255, 255, .55);
+}
+
+.form-message.error-message {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.form-message.success-message {
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.auth-link {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: #171717;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 380px) {
+  body {
+    padding: 12px 8px;
+  }
+
+  .auth-card {
+    padding: 18px 15px;
+    border-radius: 10px;
+  }
+
+  .password-rules {
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 700px) {
+  body {
+    align-items: flex-start;
+  }
+}
+
+/* ---------- Home / biodata ---------- */
+.home-card {
+  max-width: 560px;
+}
+
+.biodata-title {
+  margin: 8px 0 14px;
+  font-size: 1.25rem;
+}
+
+.biodata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.biodata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 78px;
+  padding: 14px 16px;
+  background: #171717;
+  border-left: 4px solid var(--input);
+  border-radius: 10px;
+}
+
+.biodata-label {
+  color: var(--card);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.biodata-value {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .biodata-grid {
+    grid-template-columns: 1fr;
+  }
+}
