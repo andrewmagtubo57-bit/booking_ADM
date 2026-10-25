@@ -33,6 +33,7 @@
         <div><label for="pickup">Pick-up date</label><input type="date" id="pickup"></div>
         <div><label for="ret">Return date</label><input type="date" id="ret"></div>
       </div>
+      <div id="receiptBox"></div>
       <p id="summary" class="msg">Select a vehicle first.</p>
       <p id="formMsg" class="msg" role="status" aria-live="polite"></p>
       <button class="btn" id="submitBtn" type="submit">Submit Booking Request</button>
@@ -41,6 +42,17 @@
     <h2>3. My bookings</h2>
     <p id="bookMsg" class="msg" role="status"></p>
     <div id="myBookings"></div>
+
+    <h2>4. Terms and policies</h2>
+    <div class="panel terms">
+      <strong>Reminders</strong>
+      <ul>
+        <li>Bring a valid government-issued ID.</li>
+        <li>Bring your driver's license.</li>
+        <li>Return the car on time.</li>
+        <li>Take care of the rental car.</li>
+      </ul>
+    </div>
   </main>
 
   <script type="module">
@@ -56,6 +68,28 @@
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
     const money = n => CURRENCY + Number(n).toLocaleString();
     const say = (id, text, type = "error") => { const m = $(id); m.textContent = text; m.className = text ? `msg ${type}` : "msg"; };
+
+    // Receipt block (used in the form and in My bookings)
+    function receipt(b) {
+      const r = el("div", "receipt");
+      r.append(el("div", "receipt-title", "BOOKING RECEIPT"));
+      const line = (k, v, cls) => {
+        const d = el("div", "r-line" + (cls ? " " + cls : ""));
+        d.append(el("span", "", k), el("span", "", String(v)));
+        r.append(d);
+      };
+      const rate = b.rate || (b.days ? b.total / b.days : b.total);
+      line("Customer", b.customerName || b.userName || "—");
+      line("Vehicle", b.vehicleName);
+      line("Date borrowed", b.pickupDate);
+      line("Date returned", b.returnDate);
+      line("Location", b.location || "—");
+      line("Rate", `${money(rate)} / day`);
+      line("Days", b.days);
+      line("TOTAL", money(b.total), "total");
+      return r;
+    }
+
     let user, vehicles = [], selected = null, quote = null;
 
     const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
@@ -91,9 +125,10 @@
       });
     }
 
-    // Availability check + cost calculation
+    // Availability check + cost calculation + live receipt
     function calc() {
       const a = $("pickup").value, b = $("ret").value;
+      const rb = $("receiptBox"); rb.replaceChildren();
       quote = null;
       if (!selected) return say("summary", "Select a vehicle first.");
       if (!a || !b) return say("summary", "Pick your dates to see the price.");
@@ -102,10 +137,17 @@
       const taken = (selected.bookedRanges || []).some(r => r.start < b && r.end > a);
       if (taken) return say("summary", "Vehicle unavailable for these dates. Choose another vehicle or date.");
       quote = { days, total: days * selected.pricePerDay };
-      say("summary", `Available! ${days} day(s) × ${money(selected.pricePerDay)} = ${money(quote.total)}`, "ok");
+      say("summary", "Available! Your estimated receipt:", "ok");
+      rb.append(receipt({
+        customerName: $("custName").value.trim(), vehicleName: selected.name,
+        pickupDate: a, returnDate: b, location: $("place").value.trim(),
+        rate: selected.pricePerDay, days, total: quote.total
+      }));
     }
     $("pickup").addEventListener("change", calc);
     $("ret").addEventListener("change", calc);
+    $("custName").addEventListener("input", calc);
+    $("place").addEventListener("input", calc);
     $("typeFilter").addEventListener("change", renderVehicles);
     // Contact number: digits only, max 11
     $("custPhone").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 11); });
@@ -161,8 +203,7 @@
         rows.forEach(b => {
           const c = el("div", "panel booking"), top = el("div", "row-between");
           top.append(el("strong", "", b.vehicleName), el("span", `pill ${b.status}`, b.status));
-          c.append(top, el("p", "muted", `${b.pickupDate} → ${b.returnDate} · ${b.days} day(s) · ${b.location}`),
-            el("p", "", `Total: ${money(b.total)}`), el("p", `note ${b.status}`, note[b.status] || ""));
+          c.append(top, receipt(b), el("p", `note ${b.status}`, note[b.status] || ""));
           if (b.status === "pending") {
             const x = el("button", "btn no", "Cancel request");
             x.type = "button";
