@@ -4,11 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#171717">
-  <title>Book a Vehicle</title>
+  <title>Book a Vehicle | AndrewGo Rentals</title>
   <link rel="stylesheet" href="booking.css">
 </head>
 <body>
-  <header><h1>AndrewGo Rentals🚗</h1><nav><a href="home.html">My Biodata</a></nav></header>
+  <header>
+    <div class="brand">
+      <!-- AndrewGo logo: a car with a map pin ("go anywhere") -->
+      <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="AndrewGo Rentals logo">
+        <rect width="48" height="48" rx="12" fill="#171717"/>
+        <path d="M24 3a6 6 0 0 0-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 0 0-6-6z" fill="#21F1A8"/>
+        <circle cx="24" cy="9" r="2.2" fill="#171717"/>
+        <path d="M13 26l2.5-5.5h17L35 26z" fill="#21F1A8"/>
+        <rect x="8" y="26" width="32" height="10" rx="3" fill="#21F1A8"/>
+        <circle cx="16" cy="37" r="3.6" fill="#171717" stroke="#21F1A8" stroke-width="2"/>
+        <circle cx="32" cy="37" r="3.6" fill="#171717" stroke="#21F1A8" stroke-width="2"/>
+      </svg>
+      <h1>AndrewGo Rentals🚗</h1>
+    </div>
+    <nav><a href="home.html">My Biodata</a></nav>
+  </header>
   <main>
     <p id="pageMsg" class="msg" role="status"></p>
 
@@ -28,22 +43,21 @@
       <input type="text" id="custAddress" placeholder="House no., street, barangay, city" autocomplete="street-address" maxlength="200">
       <p class="muted">Used by the rental shop for verification only.</p>
       <label for="place">Destination🗺️</label>
-      <input type="text" id="place" placeholder= "Put 'NA' if the location is confidential" maxlength="120">
+      <input type="text" id="place" placeholder="Put 'NA' if the location is confidential" maxlength="120">
       <div class="row">
         <div><label for="pickup">Pick-up date</label><input type="date" id="pickup"></div>
         <div><label for="ret">Return date</label><input type="date" id="ret"></div>
       </div>
+      <p class="muted">Same-day return is allowed and is charged as 1 day.</p>
+      <label for="payment">Payment method💵</label>
+      <select id="payment"><option value="Cash on pick-up">Cash on pick-up</option></select>
       <div id="receiptBox"></div>
       <p id="summary" class="msg">Select a vehicle first.</p>
       <p id="formMsg" class="msg" role="status" aria-live="polite"></p>
       <button class="btn" id="submitBtn" type="submit">Submit Booking Request</button>
     </form>
 
-    <h2>3. My bookings</h2>
-    <p id="bookMsg" class="msg" role="status"></p>
-    <div id="myBookings"></div>
-
-    <h2>4. Terms and policies</h2>
+    <h2>3. Terms and policies</h2>
     <div class="panel terms">
       <strong>Reminders</strong>
       <ul>
@@ -51,8 +65,13 @@
         <li>Bring your driver's license.💳</li>
         <li>Return the car on time.⌚</li>
         <li>Take care of the rental car.💖</li>
+        <li>Payment is cash on pick-up.💵</li>
       </ul>
     </div>
+
+    <h2>4. My bookings</h2>
+    <p id="bookMsg" class="msg" role="status"></p>
+    <div id="myBookings"></div>
   </main>
 
   <script type="module">
@@ -64,10 +83,18 @@
     const CURRENCY = "₱";
     const IMAGE_FOLDER = "";   // use "" if your photos are in the same folder as booking.html
     const IMAGE_EXT = ".jpg";
+    const PAYMENT = "Cash on pick-up";
     const $ = id => document.getElementById(id);
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
     const money = n => CURRENCY + Number(n).toLocaleString();
     const say = (id, text, type = "error") => { const m = $(id); m.textContent = text; m.className = text ? `msg ${type}` : "msg"; };
+
+    // ---- Date helpers ----
+    // A same-day booking (start === end) occupies that whole day, so we treat its end as the next day.
+    const addDay = s => { const d = new Date(s + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+    const effEnd = (s, e) => e > s ? e : addDay(s);
+    const overlaps = (r, a, b) => r.start < effEnd(a, b) && effEnd(r.start, r.end) > a;
+    const fmtRange = r => r.start === r.end ? r.start : `${r.start} → ${r.end}`;
 
     // Receipt block (used in the form and in My bookings)
     function receipt(b) {
@@ -85,7 +112,8 @@
       line("Date returned", b.returnDate);
       line("Location", b.location || "—");
       line("Rate", `${money(rate)} / day`);
-      line("Days", b.days);
+      line("Days", b.pickupDate && b.pickupDate === b.returnDate ? "1 (same-day)" : b.days);
+      line("Payment", b.paymentMethod || PAYMENT);
       line("TOTAL", money(b.total), "total");
       return r;
     }
@@ -95,8 +123,14 @@
     const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
     $("pickup").min = today; $("ret").min = today;
 
+    // Dates the customer has typed in (or null if not a valid range yet)
+    function chosenDates() {
+      const a = $("pickup").value, b = $("ret").value;
+      return a && b && b >= a ? { a, b } : null;
+    }
+
     function renderVehicles() {
-      const type = $("typeFilter").value, box = $("vehicles");
+      const type = $("typeFilter").value, box = $("vehicles"), want = chosenDates();
       box.replaceChildren();
       const list = vehicles.filter(v => !type || v.type === type);
       if (!list.length) {
@@ -105,19 +139,29 @@
       }
       list.forEach(v => {
         const on = selected?.id === v.id;
-        const c = el("div", "car" + (on ? " active" : ""));
+        const ranges = (v.bookedRanges || []).filter(r => effEnd(r.start, r.end) > today).sort((x, y) => x.start < y.start ? -1 : 1);
+        const clash = !!want && ranges.some(r => overlaps(r, want.a, want.b));
+        const c = el("div", "car" + (on ? " active" : "") + (clash ? " booked" : ""));
         const icon = el("div", "car-icon", v.icon || "🚗");
         const im = el("img", "car-img");
         im.alt = v.name;
         im.onerror = () => im.replaceWith(icon);   // no photo found -> show the emoji instead
         im.src = IMAGE_FOLDER + v.id + IMAGE_EXT;
-        c.append(im, el("strong", "", v.name),
+        c.append(im);
+        if (clash) c.append(el("span", "booked-badge", "Already booked on your dates"));
+        c.append(el("strong", "", `${v.name} (1)`),
           el("span", "muted", `${v.type} · ${v.seats} seats`), el("span", "price", `${money(v.pricePerDay)} / day`));
+        if (ranges.length) {
+          const bk = el("div", "booked-list");
+          bk.append(el("span", "booked-title", "Booked by other customers:"));
+          ranges.forEach(r => bk.append(el("span", "booked-date", fmtRange(r))));
+          c.append(bk);
+        }
         const b = el("button", "btn", on ? "Selected" : "Select");
         b.type = "button";
         b.onclick = () => {
           selected = v;
-          $("chosen").textContent = `${v.name} (${money(v.pricePerDay)}/day)`;
+          $("chosen").textContent = `${v.name} (1) · ${money(v.pricePerDay)}/day`;
           renderVehicles(); calc();
           $("bookForm").scrollIntoView({ behavior: "smooth" });
         };
@@ -132,20 +176,28 @@
       quote = null;
       if (!selected) return say("summary", "Select a vehicle first.");
       if (!a || !b) return say("summary", "Pick your dates to see the price.");
-      const days = Math.round((new Date(b) - new Date(a)) / 864e5);
-      if (days < 1) return say("summary", "Return date must be after the pick-up date.");
-      const taken = (selected.bookedRanges || []).some(r => r.start < b && r.end > a);
-      if (taken) return say("summary", "Vehicle unavailable for these dates. Choose another vehicle or date.");
+      if (b < a) return say("summary", "Return date can't be before the pick-up date.");
+      const days = Math.max(1, Math.round((new Date(b) - new Date(a)) / 864e5));   // same-day = 1 day
+      const taken = (selected.bookedRanges || []).filter(r => overlaps(r, a, b));
+      if (taken.length) {
+        return say("summary", `Vehicle unavailable for these dates (already booked: ${taken.map(fmtRange).join(", ")}). Choose another vehicle or date.`);
+      }
       quote = { days, total: days * selected.pricePerDay };
       say("summary", "Available! Your estimated receipt:", "ok");
       rb.append(receipt({
         customerName: $("custName").value.trim(), vehicleName: selected.name,
         pickupDate: a, returnDate: b, location: $("place").value.trim(),
-        rate: selected.pricePerDay, days, total: quote.total
+        rate: selected.pricePerDay, days, total: quote.total, paymentMethod: PAYMENT
       }));
     }
-    $("pickup").addEventListener("change", calc);
-    $("ret").addEventListener("change", calc);
+
+    function onDates() {
+      // Return date can never be earlier than the pick-up date (same day is fine)
+      if ($("pickup").value) $("ret").min = $("pickup").value; else $("ret").min = today;
+      renderVehicles(); calc();
+    }
+    $("pickup").addEventListener("change", onDates);
+    $("ret").addEventListener("change", onDates);
     $("custName").addEventListener("input", calc);
     $("place").addEventListener("input", calc);
     $("typeFilter").addEventListener("change", renderVehicles);
@@ -161,7 +213,7 @@
       if (!name) return say("formMsg", "Please enter your full name.");
       if (!/^[0-9]{11}$/.test(phone)) return say("formMsg", "Contact number must be exactly 11 digits, numbers only (e.g. 09123456789).");
       if (!addr) return say("formMsg", "Please enter your current address.");
-      if (!place) return say("formMsg", "Please enter the pick-up location.");
+      if (!place) return say("formMsg", "Please enter your destination.");
       if (!quote) return say("formMsg", "Choose valid, available dates first.");
       $("submitBtn").disabled = true;
       try {
@@ -169,9 +221,10 @@
           uid: user.uid, userName: user.displayName || "", userEmail: user.email, customerName: name, phone, address: addr,
           vehicleId: selected.id, vehicleName: selected.name, location: place,
           pickupDate: $("pickup").value, returnDate: $("ret").value,
-          days: quote.days, total: quote.total, status: "pending", createdAt: serverTimestamp()
+          days: quote.days, total: quote.total, paymentMethod: PAYMENT, status: "pending", createdAt: serverTimestamp()
         });
         $("bookForm").reset(); $("custName").value = user.displayName || ""; selected = null; quote = null;
+        $("ret").min = today;
         $("chosen").textContent = "None selected";
         renderVehicles(); calc();
         say("formMsg", "Booking request submitted! Waiting for admin approval.", "ok");
@@ -195,7 +248,7 @@
 
     // Customer notification = live status of each request
     function watchMine() {
-      const note = { pending: "Waiting for admin review.", approved: "Your booking is confirmed!", rejected: "Sorry, your booking was not approved.", cancelled: "You cancelled this request." };
+      const note = { pending: "Waiting for admin review.", approved: "Your booking is confirmed! Please pay cash on pick-up.", rejected: "Sorry, your booking was not approved.", cancelled: "You cancelled this request." };
       onSnapshot(query(collection(db, "bookings"), where("uid", "==", user.uid)), snap => {
         const box = $("myBookings"); box.replaceChildren();
         const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 9e9) - (a.createdAt?.seconds || 9e9));
@@ -204,6 +257,11 @@
           const c = el("div", "panel booking"), top = el("div", "row-between");
           top.append(el("strong", "", b.vehicleName), el("span", `pill ${b.status}`, b.status));
           c.append(top, receipt(b), el("p", `note ${b.status}`, note[b.status] || ""));
+          if (b.status === "rejected") {
+            const why = el("div", "reason-box");
+            why.append(el("strong", "", "Reason from the admin:"), el("p", "", b.rejectReason || "No reason was provided."));
+            c.append(why);
+          }
           if (b.status === "pending") {
             const x = el("button", "btn no", "Cancel request");
             x.type = "button";
